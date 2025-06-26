@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -36,56 +35,31 @@ const CloudCast = () => {
     }
   };
 
-  const handlePredictNextFrame = () => {
-    // Generate dynamic date and time for the predicted frame
-    const now = new Date();
-    // Add 30 minutes to current time to simulate next frame prediction
-    const futureTime = new Date(now.getTime() + 30 * 60 * 1000);
-    
-    const formattedDate = futureTime.toLocaleString('en-CA', {
-      year: 'numeric',
-      month: 'numeric',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    }).replace(',', '');
+  const handlePredictNextFrame = async () => {
+    if (!hasAllImages) return;
 
-    // Simulate prediction by creating a dark cloud-like pattern
-    const canvas = document.createElement('canvas');
-    canvas.width = 200;
-    canvas.height = 200;
-    const ctx = canvas.getContext('2d');
-    
-    if (ctx) {
-      // Create a gradient that simulates cloud patterns
-      const gradient = ctx.createRadialGradient(100, 100, 20, 100, 100, 100);
-      gradient.addColorStop(0, '#4a4a4a');
-      gradient.addColorStop(0.5, '#2a2a2a');
-      gradient.addColorStop(1, '#1a1a1a');
-      
-      ctx.fillStyle = gradient;
-      ctx.fillRect(0, 0, 200, 200);
-      
-      // Add some cloud-like noise
-      for (let i = 0; i < 50; i++) {
-        const x = Math.random() * 200;
-        const y = Math.random() * 200;
-        const radius = Math.random() * 30 + 10;
-        const opacity = Math.random() * 0.3 + 0.1;
-        
-        ctx.globalAlpha = opacity;
-        ctx.fillStyle = '#666';
-        ctx.beginPath();
-        ctx.arc(x, y, radius, 0, Math.PI * 2);
-        ctx.fill();
+    const formData = new FormData();
+    uploadedImages.forEach((file, idx) => {
+      if (file) {
+        formData.append(`file${idx + 1}`, file);
       }
-      
-      setPredictedImage(canvas.toDataURL());
-      setSsim(Math.random() * 0.3 + 0.7); // Random SSIM between 0.7-1.0
-      setPredictionDate(formattedDate); // Set the dynamic date
+    });
+
+    try {
+      const response = await fetch('http://localhost:8000/predict', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) throw new Error('Prediction failed');
+
+      const blob = await response.blob();
+      setPredictedImage(URL.createObjectURL(blob));
+      setSsim(Math.random() * 0.3 + 0.7); // Placeholder SSIM
+      setPredictionDate(new Date().toLocaleString());
+    } catch (err) {
+      alert('Prediction failed: ' + err);
     }
-    
-    console.log('Prediction generated with date:', formattedDate);
   };
 
   const handleRegeneratePrediction = () => {
